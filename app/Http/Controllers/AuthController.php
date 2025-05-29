@@ -17,27 +17,30 @@ class AuthController extends Controller
 
     // ✅ Proses login
     public function login(Request $request)
-    {
-        $request->validate([
-            'phone' => 'required|digits_between:10,15',
-            'password' => 'required',
-        ]);
+{
+    $request->validate([
+        'phone' => 'required|digits_between:10,15',
+        'password' => 'required',
+    ]);
 
-        $credentials = $request->only('phone', 'password');
+    // Cari user berdasarkan nomor telepon
+    $user = User::where('phone', $request->phone)->first();
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+    // Jika user ada dan password cocok
+    if ($user && Hash::check($request->password, $user->password)) {
+        Auth::login($user); // Login manual
 
-            return match ($user->role) {
-                'petani' => redirect()->route('petani.dashboard'),
-                'pabrik' => redirect()->route('pabrik.dashboard'),
-                // 'admin'  => redirect()->route('admin.dashboard'),
-                default => redirect()->route('login')->withErrors(['role' => 'Role tidak dikenali.']),
-            };
-        }
-
-        return back()->withErrors(['phone' => 'Nomor HP atau password salahhhhh.'])->withInput();
+        return match ($user->role) {
+            'petani' => redirect()->route('petani.dashboard'),
+            'pabrik' => redirect()->route('pabrik.dashboard'),
+            // 'admin'  => redirect()->route('admin.dashboard'),
+            default  => redirect()->route('login')->withErrors(['role' => 'Role tidak dikenali.']),
+        };
     }
+
+    return back()->withErrors(['phone' => 'Nomor HP atau password salah.'])->withInput();
+}
+
 
     // ✅ Logout
     public function logout()
